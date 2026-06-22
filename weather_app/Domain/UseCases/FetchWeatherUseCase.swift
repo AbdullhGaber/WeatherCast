@@ -33,7 +33,7 @@ struct CitySearchResult: Identifiable {
     let country: String
     let lat: Double
     let lon: Double
-    var query: String { "\(lat),\(lon)" }
+    var query: String { "\(name), \(country)" }
 
     init(id: UUID = UUID(), name: String, region: String, country: String, lat: Double, lon: Double) {
         self.id = id
@@ -53,7 +53,7 @@ struct SavedLocationEntry: Identifiable, Hashable {
     let country: String
     let lat: Double
     let lon: Double
-    var query: String { "\(lat),\(lon)" }
+    var query: String { "\(name), \(country)" }
 
     init(id: UUID = UUID(), name: String, country: String, lat: Double, lon: Double) {
         self.id = id
