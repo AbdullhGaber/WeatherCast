@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		BB85279F928DDC1B685D3388 /* Swinject in Frameworks */ = {isa = PBXBuildFile; productRef = 483BE3F9F2A8B74B25440ADC /* Swinject */; };
+		CFC8C2A2C303D0843FE01DF4 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = 9D6223E44B05F57F4B4099F4 /* Alamofire */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		C9D8F99B2FE8C0D80077CEB8 /* weather_app.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = weather_app.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CFC8C2A2C303D0843FE01DF4 /* Alamofire in Frameworks */,
+				BB85279F928DDC1B685D3388 /* Swinject in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = weather_app;
 			packageProductDependencies = (
+				9D6223E44B05F57F4B4099F4 /* Alamofire */,
+				483BE3F9F2A8B74B25440ADC /* Swinject */,
 			);
 			productName = weather_app;
 			productReference = C9D8F99B2FE8C0D80077CEB8 /* weather_app.app */;
@@ -94,6 +103,10 @@
 			);
 			mainGroup = C9D8F9922FE8C0D80077CEB8;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				07FCE29E499522EB7D6BDB0E /* XCRemoteSwiftPackageReference "Alamofire" */,
+				6989C92C2FC53FDC9A51881F /* XCRemoteSwiftPackageReference "Swinject" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C9D8F99C2FE8C0D80077CEB8 /* Products */;
 			projectDirPath = "";
@@ -322,6 +335,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		07FCE29E499522EB7D6BDB0E /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.10.2;
+			};
+		};
+		6989C92C2FC53FDC9A51881F /* XCRemoteSwiftPackageReference "Swinject" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Swinject/Swinject";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		483BE3F9F2A8B74B25440ADC /* Swinject */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6989C92C2FC53FDC9A51881F /* XCRemoteSwiftPackageReference "Swinject" */;
+			productName = Swinject;
+		};
+		9D6223E44B05F57F4B4099F4 /* Alamofire */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 07FCE29E499522EB7D6BDB0E /* XCRemoteSwiftPackageReference "Alamofire" */;
+			productName = Alamofire;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C9D8F9932FE8C0D80077CEB8 /* Project object */;
 }

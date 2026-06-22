@@ -1,24 +1,12 @@
-//
-//  ContentView.swift
-//  weather_app
-//
-//  Created by Abdullh Gaber on 22/06/2026.
-//
+// ContentView.swift
+// WeatherCast App
+// Root view — resolves the root ViewModel from the Swinject container.
 
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        DashboardView(viewModel: AppContainer.shared.resolve(DashboardViewModel.self))
     }
 }
 
-#Preview {
-    ContentView()
-}
