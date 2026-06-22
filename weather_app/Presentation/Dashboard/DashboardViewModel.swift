@@ -157,6 +157,7 @@ final class DashboardViewModel: ObservableObject {
     func deleteLocation(_ location: SavedLocationEntry) {
         try? savedLocationsUseCase.delete(location)
         loadSavedLocations()
+        showToast("📍 \(location.name) removed from saved locations")
     }
 
     // MARK: - Save / Unsave Current Location
@@ -179,7 +180,6 @@ final class DashboardViewModel: ObservableObject {
                 $0.name == weather.locationName && $0.country == weather.country
             }) {
                 deleteLocation(existing)
-                showToast("📍 \(weather.locationName) removed from saved locations")
             }
         } else {
             // Save using the coordinates returned by the API

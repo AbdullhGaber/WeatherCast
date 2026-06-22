@@ -26,6 +26,30 @@ struct DashboardView: View {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 24) {
 
+                        // Bookmark icon above search bar
+                        if viewModel.weather != nil {
+                            HStack {
+                                Spacer()
+                                Button(action: { viewModel.toggleSaveCurrentLocation() }) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(theme.glassBackground)
+                                            .frame(width: 44, height: 44)
+                                            .overlay(
+                                                Circle().strokeBorder(theme.glassBorder, lineWidth: 1)
+                                            )
+
+                                        Image(systemName: viewModel.isCurrentLocationSaved ? "bookmark.fill" : "bookmark")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundColor(viewModel.isCurrentLocationSaved ? .yellow : theme.textColor)
+                                    }
+                                }
+                                .symbolEffect(.bounce, value: viewModel.isCurrentLocationSaved)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 56)
+                        }
+
                         // Search Bar
                         SearchBarView(
                             query: $viewModel.searchQuery,
@@ -33,7 +57,7 @@ struct DashboardView: View {
                             theme: theme,
                             onClear: { viewModel.clearSearch() }
                         )
-                        .padding(.top, 56)
+                        .padding(.top, viewModel.weather != nil ? 0 : 56)
                         .padding(.horizontal, 20)
 
                         // Search Results
@@ -76,9 +100,7 @@ struct DashboardView: View {
                         if let weather = viewModel.weather {
                             CurrentWeatherHeaderView(
                                 weather: weather,
-                                theme: theme,
-                                isSaved: viewModel.isCurrentLocationSaved,
-                                onToggleSave: { viewModel.toggleSaveCurrentLocation() }
+                                theme: theme
                             )
 
                             ForecastListView(
@@ -234,8 +256,6 @@ private struct SearchResultsView: View {
 }
 
 // MARK: - Saved Locations
-// Uses an explicit visible trash button per row — swipeActions only works inside List,
-// not inside VStack/ForEach, so a visible button is the correct pattern here.
 
 private struct SavedLocationsView: View {
 
@@ -254,7 +274,7 @@ private struct SavedLocationsView: View {
                     .tracking(1.5)
                     .foregroundColor(theme.secondaryTextColor)
                 Spacer()
-                Text("Tap to load · Trash to delete")
+                Text("Swipe left to delete")
                     .font(.system(size: 10, design: .rounded))
                     .foregroundColor(theme.secondaryTextColor.opacity(0.7))
             }
@@ -262,47 +282,47 @@ private struct SavedLocationsView: View {
             .padding(.top, 14)
             .padding(.bottom, 8)
 
-            ForEach(locations) { location in
-                HStack(spacing: 12) {
-
-                    // Tap area → load weather
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(location.name)
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                .foregroundColor(theme.textColor)
-                            Text(location.country)
-                                .font(.system(size: 12, design: .rounded))
+            List {
+                ForEach(locations) { location in
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(location.name)
+                                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                    .foregroundColor(theme.textColor)
+                                Text(location.country)
+                                    .font(.system(size: 12, design: .rounded))
+                                    .foregroundColor(theme.secondaryTextColor)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(theme.secondaryTextColor)
                         }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(theme.secondaryTextColor)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture { onSelect(location) }
+                        .contentShape(Rectangle())
+                        .onTapGesture { onSelect(location) }
+                        .padding(.vertical, 10)
 
-                    // Delete button — always visible
-                    Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                            onDelete(location)
+                        if location.id != locations.last?.id {
+                            Divider().overlay(theme.glassBorder)
                         }
-                    } label: {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.white)
-                            .padding(8)
-                            .background(Circle().fill(Color.red.opacity(0.85)))
                     }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-
-                if location.id != locations.last?.id {
-                    Divider().overlay(theme.glassBorder).padding(.horizontal, 12)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            onDelete(location)
+                        } label: {
+                            Label("Delete", systemImage: "trash.fill")
+                        }
+                    }
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .scrollDisabled(true)
+            .frame(height: CGFloat(locations.count) * 62)
         }
         .glassCard(radius: 20, theme: theme)
         .transition(.move(edge: .top).combined(with: .opacity))
