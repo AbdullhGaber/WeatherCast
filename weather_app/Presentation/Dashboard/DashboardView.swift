@@ -65,6 +65,7 @@ struct DashboardView: View {
                             SearchResultsView(
                                 results: viewModel.searchResults,
                                 theme: theme,
+                                isSaved: { viewModel.isLocationSaved($0) },
                                 onSelect: { viewModel.select(searchResult: $0) },
                                 onSave:   { viewModel.saveCurrentSearchResult($0) }
                             )
@@ -217,12 +218,14 @@ private struct SearchResultsView: View {
 
     let results: [CitySearchResult]
     @ObservedObject var theme: ThemeEngine
+    let isSaved: (CitySearchResult) -> Bool
     let onSelect: (CitySearchResult) -> Void
     let onSave: (CitySearchResult) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(results.enumerated()), id: \.element.id) { index, result in
+                let saved = isSaved(result)
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(result.name)
@@ -234,9 +237,9 @@ private struct SearchResultsView: View {
                     }
                     Spacer()
                     Button { onSave(result) } label: {
-                        Image(systemName: "bookmark.fill")
+                        Image(systemName: saved ? "bookmark.fill" : "bookmark")
                             .font(.system(size: 14))
-                            .foregroundColor(theme.secondaryTextColor)
+                            .foregroundColor(saved ? .yellow : theme.secondaryTextColor)
                             .padding(8)
                             .background(Circle().fill(theme.glassBackground))
                     }

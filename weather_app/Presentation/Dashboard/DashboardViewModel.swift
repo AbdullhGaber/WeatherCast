@@ -153,15 +153,28 @@ final class DashboardViewModel: ObservableObject {
         savedLocations = savedLocationsUseCase.fetchAll()
     }
 
+    func isLocationSaved(_ result: CitySearchResult) -> Bool {
+        savedLocations.contains {
+            $0.name == result.name && $0.country == result.country
+        }
+    }
+
     func saveCurrentSearchResult(_ result: CitySearchResult) {
-        let entry = SavedLocationEntry(
-            name: result.name,
-            country: result.country,
-            lat: result.lat,
-            lon: result.lon
-        )
-        try? savedLocationsUseCase.save(entry)
-        loadSavedLocations()
+        if let existing = savedLocations.first(where: {
+            $0.name == result.name && $0.country == result.country
+        }) {
+            deleteLocation(existing)
+        } else {
+            let entry = SavedLocationEntry(
+                name: result.name,
+                country: result.country,
+                lat: result.lat,
+                lon: result.lon
+            )
+            try? savedLocationsUseCase.save(entry)
+            loadSavedLocations()
+            showToast("⭐ \(result.name) saved to your locations")
+        }
     }
 
     func deleteLocation(_ location: SavedLocationEntry) {
