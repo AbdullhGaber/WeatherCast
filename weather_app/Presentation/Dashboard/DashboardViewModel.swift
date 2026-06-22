@@ -23,9 +23,13 @@ final class DashboardViewModel: ObservableObject {
     @Published var savedLocations: [SavedLocationEntry] = []
     @Published var activeLocationQuery: String = "30.0715495,31.0215953"  // Default: Cairo
 
+    // MARK: - Toast State
+
+    @Published var toastMessage: String = ""
+    @Published var isToastVisible: Bool = false
+    private var toastDismissTask: Task<Void, Never>?
+
     // MARK: - Dependencies
-    // Grouped into a nonisolated value-type so the nonisolated init can store them
-    // without touching any @MainActor-isolated stored properties.
 
     private struct Dependencies {
         let fetchWeatherUseCase: FetchWeatherUseCaseProtocol
@@ -34,12 +38,9 @@ final class DashboardViewModel: ObservableObject {
     }
 
     nonisolated(unsafe) private var deps: Dependencies!
-
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Init
-    // `nonisolated` so Swinject's synchronous resolver closure can call this
-    // without a @MainActor dispatch hop. All @MainActor work is deferred to start().
 
     nonisolated init(repository: WeatherRepository) {
         self.deps = Dependencies(
@@ -49,7 +50,7 @@ final class DashboardViewModel: ObservableObject {
         )
     }
 
-    // MARK: - Startup (called once from DashboardView via .task — always on main actor)
+    // MARK: - Startup
 
     func start() {
         bindSearch()
@@ -57,7 +58,6 @@ final class DashboardViewModel: ObservableObject {
         loadWeather(query: activeLocationQuery)
     }
 
-    // Convenience accessors (main-actor only)
     private var fetchWeatherUseCase: FetchWeatherUseCaseProtocol { deps.fetchWeatherUseCase }
     private var savedLocationsUseCase: SavedLocationsUseCaseProtocol { deps.savedLocationsUseCase }
     private var repository: WeatherRepository { deps.repository }
@@ -81,8 +81,6 @@ final class DashboardViewModel: ObservableObject {
                 },
                 receiveValue: { [weak self] entity in
                     self?.weather = entity
-                    // Update the theme engine with the location's local hour so the
-                    // background reflects El Salvador night, Cairo morning, etc.
                     ThemeEngine.shared.setLocationHour(entity.localHour)
                 }
             )
@@ -96,9 +94,7 @@ final class DashboardViewModel: ObservableObject {
             .debounce(for: .milliseconds(400), scheduler: DispatchQueue.main)
             .removeDuplicates()
             .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            .sink { [weak self] query in
-                self?.performSearch(query: query)
-            }
+            .sink { [weak self] query in self?.performSearch(query: query) }
             .store(in: &cancellables)
 
         $searchQuery
@@ -130,14 +126,12 @@ final class DashboardViewModel: ObservableObject {
         searchResults = []
     }
 
-    // MARK: - Select a Search Result (load weather for it)
+    // MARK: - Navigation
 
     func select(searchResult: CitySearchResult) {
         clearSearch()
         loadWeather(query: searchResult.query)
     }
-
-    // MARK: - Select a Saved Location
 
     func select(savedLocation: SavedLocationEntry) {
         loadWeather(query: savedLocation.query)
@@ -163,6 +157,62 @@ final class DashboardViewModel: ObservableObject {
     func deleteLocation(_ location: SavedLocationEntry) {
         try? savedLocationsUseCase.delete(location)
         loadSavedLocations()
+    }
+
+    // MARK: - Save / Unsave Current Location
+
+    /// True when the currently displayed weather location is already in saved locations.
+    var isCurrentLocationSaved: Bool {
+        guard let weather else { return false }
+        return savedLocations.contains {
+            $0.name == weather.locationName && $0.country == weather.country
+        }
+    }
+
+    /// Toggles save/unsave for the currently displayed weather location.
+    func toggleSaveCurrentLocation() {
+        guard let weather else { return }
+
+        if isCurrentLocationSaved {
+            // Find and delete the matching saved entry
+            if let existing = savedLocations.first(where: {
+                $0.name == weather.locationName && $0.country == weather.country
+            }) {
+                deleteLocation(existing)
+                showToast("📍 \(weather.locationName) removed from saved locations")
+            }
+        } else {
+            // Save using the coordinates returned by the API
+            let entry = SavedLocationEntry(
+                name: weather.locationName,
+                country: weather.country,
+                lat: weather.lat,
+                lon: weather.lon
+            )
+            try? savedLocationsUseCase.save(entry)
+            loadSavedLocations()
+            showToast("⭐ \(weather.locationName) saved to your locations")
+        }
+    }
+
+    // MARK: - Toast
+
+    private func showToast(_ message: String) {
+        toastMessage = message
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+            isToastVisible = true
+        }
+        // Cancel any pending dismiss and schedule a new one
+        toastDismissTask?.cancel()
+        toastDismissTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2.5))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(.easeOut(duration: 0.35)) {
+                    self?.isToastVisible = false
+                }
+            }
+        }
     }
 
     // MARK: - Helpers

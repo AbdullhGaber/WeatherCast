@@ -17,6 +17,8 @@ struct WeatherResponseDTO: Codable {
 struct LocationDTO: Codable {
     let name: String
     let country: String
+    let lat: Double
+    let lon: Double
     let localtime: String
 }
 
@@ -104,6 +106,8 @@ extension WeatherResponseDTO {
         return WeatherEntity(
             locationName: location.name,
             country: location.country,
+            lat: location.lat,
+            lon: location.lon,
             currentTemp: current.temp_c,
             feelsLike: current.feelslike_c,
             conditionText: current.condition.text,

@@ -1,6 +1,6 @@
 // Presentation/Dashboard/DashboardView.swift
 // WeatherCast App
-// Screen 1 — The main Dashboard: header, forecast, metrics, search, saved locations
+// Screen 1 — Dashboard: header, forecast, metrics, search, saved locations, toast
 
 import SwiftUI
 
@@ -20,97 +20,131 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 24) {
+            ZStack(alignment: .bottom) {
 
-                    // MARK: Search Bar
-                    SearchBarView(
-                        query: $viewModel.searchQuery,
-                        isSearching: viewModel.isSearching,
-                        theme: theme,
-                        onClear: { viewModel.clearSearch() }
-                    )
-                    .padding(.top, 56)
-                    .padding(.horizontal, 20)
+                // MARK: Main scroll content
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 24) {
 
-                    // MARK: Search Results
-                    if !viewModel.searchResults.isEmpty {
-                        SearchResultsView(
-                            results: viewModel.searchResults,
+                        // Search Bar
+                        SearchBarView(
+                            query: $viewModel.searchQuery,
+                            isSearching: viewModel.isSearching,
                             theme: theme,
-                            onSelect: { viewModel.select(searchResult: $0) },
-                            onSave:   { viewModel.saveCurrentSearchResult($0) }
+                            onClear: { viewModel.clearSearch() }
                         )
+                        .padding(.top, 56)
                         .padding(.horizontal, 20)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                    }
 
-                    // MARK: Saved Locations
-                    if !viewModel.savedLocations.isEmpty && viewModel.searchResults.isEmpty {
-                        SavedLocationsView(
-                            locations: viewModel.savedLocations,
-                            theme: theme,
-                            onSelect: { viewModel.select(savedLocation: $0) },
-                            onDelete: { viewModel.deleteLocation($0) }
-                        )
-                        .padding(.horizontal, 20)
-                    }
-
-                    // MARK: Loading
-                    if viewModel.isLoading && viewModel.weather == nil {
-                        LoadingView(theme: theme)
-                    }
-
-                    // MARK: Error
-                    if let error = viewModel.errorMessage {
-                        ErrorBannerView(message: error, theme: theme) {
-                            viewModel.loadWeather(query: viewModel.activeLocationQuery)
-                        }
-                        .padding(.horizontal, 20)
-                    }
-
-                    // MARK: Weather Content
-                    if let weather = viewModel.weather {
-                        CurrentWeatherHeaderView(weather: weather, theme: theme)
-
-                        ForecastListView(
-                            forecast: weather.forecast,
-                            theme: theme
-                        ) { day in
-                            selectedDay = day
-                            showHourly = true
+                        // Search Results
+                        if !viewModel.searchResults.isEmpty {
+                            SearchResultsView(
+                                results: viewModel.searchResults,
+                                theme: theme,
+                                onSelect: { viewModel.select(searchResult: $0) },
+                                onSave:   { viewModel.saveCurrentSearchResult($0) }
+                            )
+                            .padding(.horizontal, 20)
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
 
-                        MetricsGridView(weather: weather, theme: theme)
-                            .padding(.bottom, 34)
+                        // Saved Locations
+                        if !viewModel.savedLocations.isEmpty && viewModel.searchResults.isEmpty {
+                            SavedLocationsView(
+                                locations: viewModel.savedLocations,
+                                theme: theme,
+                                onSelect: { viewModel.select(savedLocation: $0) },
+                                onDelete: { viewModel.deleteLocation($0) }
+                            )
+                            .padding(.horizontal, 20)
+                        }
+
+                        // Loading
+                        if viewModel.isLoading && viewModel.weather == nil {
+                            LoadingView(theme: theme)
+                        }
+
+                        // Error
+                        if let error = viewModel.errorMessage {
+                            ErrorBannerView(message: error, theme: theme) {
+                                viewModel.loadWeather(query: viewModel.activeLocationQuery)
+                            }
+                            .padding(.horizontal, 20)
+                        }
+
+                        // Weather Content
+                        if let weather = viewModel.weather {
+                            CurrentWeatherHeaderView(
+                                weather: weather,
+                                theme: theme,
+                                isSaved: viewModel.isCurrentLocationSaved,
+                                onToggleSave: { viewModel.toggleSaveCurrentLocation() }
+                            )
+
+                            ForecastListView(
+                                forecast: weather.forecast,
+                                theme: theme
+                            ) { day in
+                                selectedDay = day
+                                showHourly = true
+                            }
+
+                            MetricsGridView(weather: weather, theme: theme)
+                                .padding(.bottom, 34)
+                        }
                     }
                 }
-            }
-            // ─────────────────────────────────────────────────────────────
-            // KEY: Attach the background to the ScrollView (the direct child
-            // of NavigationStack). SwiftUI propagates this background through
-            // the NavigationStack chrome correctly — any other placement does
-            // not work (outer ZStack, .background(.clear) on NavigationStack).
-            // ─────────────────────────────────────────────────────────────
-            .background(alignment: .center) {
-                ZStack {
-                    Image(theme.backgroundImageName)
-                        .resizable()
-                        .scaledToFill()
-                    theme.imageOverlayColor
+                .background(alignment: .center) {
+                    ZStack {
+                        Image(theme.backgroundImageName)
+                            .resizable()
+                            .scaledToFill()
+                        theme.imageOverlayColor
+                    }
+                    .ignoresSafeArea()
+                    .animation(.easeInOut(duration: 1.2), value: theme.backgroundImageName)
                 }
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 1.2), value: theme.backgroundImageName)
-            }
-            .navigationBarHidden(true)
-            .navigationDestination(isPresented: $showHourly) {
-                if let day = selectedDay {
-                    HourlyForecastView(day: day, theme: theme)
+                .navigationBarHidden(true)
+                .navigationDestination(isPresented: $showHourly) {
+                    if let day = selectedDay {
+                        HourlyForecastView(day: day, theme: theme)
+                    }
+                }
+                .animation(.easeInOut(duration: 0.3), value: viewModel.searchResults.isEmpty)
+                .task { viewModel.start() }
+
+                // MARK: Toast
+                if viewModel.isToastVisible {
+                    ToastView(message: viewModel.toastMessage, theme: theme)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .padding(.bottom, 30)
+                        .zIndex(1)
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: viewModel.searchResults.isEmpty)
-            .task { viewModel.start() }
         }
+    }
+}
+
+// MARK: - Toast View
+
+private struct ToastView: View {
+    let message: String
+    @ObservedObject var theme: ThemeEngine
+
+    var body: some View {
+        Text(message)
+            .font(.system(size: 14, weight: .medium, design: .rounded))
+            .foregroundColor(theme.isMorning ? .black : .white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
+            .background(
+                Capsule()
+                    .fill(theme.glassBackground)
+                    .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 4)
+            )
+            .overlay(
+                Capsule().strokeBorder(theme.glassBorder, lineWidth: 1)
+            )
     }
 }
 
@@ -200,6 +234,8 @@ private struct SearchResultsView: View {
 }
 
 // MARK: - Saved Locations
+// Uses an explicit visible trash button per row — swipeActions only works inside List,
+// not inside VStack/ForEach, so a visible button is the correct pattern here.
 
 private struct SavedLocationsView: View {
 
@@ -210,40 +246,58 @@ private struct SavedLocationsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("SAVED LOCATIONS")
-                .font(.system(size: 11, weight: .semibold, design: .rounded))
-                .tracking(1.5)
-                .foregroundColor(theme.secondaryTextColor)
-                .padding(.horizontal, 16)
-                .padding(.top, 14)
-                .padding(.bottom, 8)
+
+            // Section header
+            HStack {
+                Text("SAVED LOCATIONS")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .tracking(1.5)
+                    .foregroundColor(theme.secondaryTextColor)
+                Spacer()
+                Text("Tap to load · Trash to delete")
+                    .font(.system(size: 10, design: .rounded))
+                    .foregroundColor(theme.secondaryTextColor.opacity(0.7))
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 8)
 
             ForEach(locations) { location in
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(location.name)
-                            .font(.system(size: 15, weight: .semibold, design: .rounded))
-                            .foregroundColor(theme.textColor)
-                        Text(location.country)
-                            .font(.system(size: 12, design: .rounded))
+                HStack(spacing: 12) {
+
+                    // Tap area → load weather
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(location.name)
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                .foregroundColor(theme.textColor)
+                            Text(location.country)
+                                .font(.system(size: 12, design: .rounded))
+                                .foregroundColor(theme.secondaryTextColor)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(theme.secondaryTextColor)
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(theme.secondaryTextColor)
+                    .contentShape(Rectangle())
+                    .onTapGesture { onSelect(location) }
+
+                    // Delete button — always visible
+                    Button {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                            onDelete(location)
+                        }
+                    } label: {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white)
+                            .padding(8)
+                            .background(Circle().fill(Color.red.opacity(0.85)))
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .contentShape(Rectangle())
-                .onTapGesture { onSelect(location) }
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    Button(role: .destructive) {
-                        withAnimation { onDelete(location) }
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
 
                 if location.id != locations.last?.id {
                     Divider().overlay(theme.glassBorder).padding(.horizontal, 12)
@@ -301,14 +355,8 @@ private struct ErrorBannerView: View {
 private extension View {
     func glassCard(radius: CGFloat, theme: ThemeEngine) -> some View {
         self
-            .background(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(theme.glassBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(theme.glassBorder, lineWidth: 1)
-            )
+            .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(theme.glassBackground))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(theme.glassBorder, lineWidth: 1))
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
     }
 }
