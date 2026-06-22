@@ -22,6 +22,7 @@ final class DashboardViewModel: ObservableObject {
 
     @Published var savedLocations: [SavedLocationEntry] = []
     @Published var activeLocationQuery: String = "30.0715495,31.0215953"  // Default: Cairo
+    private let locationManager = LocationManager()
 
     // MARK: - Toast State
 
@@ -55,7 +56,16 @@ final class DashboardViewModel: ObservableObject {
     func start() {
         bindSearch()
         loadSavedLocations()
-        loadWeather(query: activeLocationQuery)
+        
+        locationManager.requestLocation { [weak self] location in
+            guard let self = self else { return }
+            if let location = location {
+                let query = "\(location.coordinate.latitude),\(location.coordinate.longitude)"
+                self.loadWeather(query: query)
+            } else {
+                self.loadWeather(query: self.activeLocationQuery)
+            }
+        }
     }
 
     private var fetchWeatherUseCase: FetchWeatherUseCaseProtocol { deps.fetchWeatherUseCase }
