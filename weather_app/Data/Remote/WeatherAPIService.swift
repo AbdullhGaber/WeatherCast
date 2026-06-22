@@ -11,7 +11,7 @@ final class WeatherAPIService {
     // MARK: - Constants
 
     private enum Constants {
-        static let apiKey      = "77e1a4043fad42ebbe010511262206"
+        static let apiKey      = AppSecrets.weatherAPIKey   // ← loaded from Configuration/AppSecrets.swift
         static let baseURL     = "https://api.weatherapi.com/v1"
         static let forecastURL = "\(baseURL)/forecast.json"
         static let searchURL   = "\(baseURL)/search.json"

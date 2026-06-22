@@ -1,5 +1,9 @@
 # Xcode
-*.pbxuser
+# Secrets — NEVER commit the real key file
+**/AppSecrets.swift
+!**/AppSecrets.swift.example
+
+
 !default.pbxuser
 *.mode1v3
 !default.mode1v3
