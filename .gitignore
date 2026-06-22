@@ -1,8 +1,7 @@
 # Xcode
-# Secrets — NEVER commit the real key file
-**/AppSecrets.swift
-!**/AppSecrets.swift.example
-
+# Secrets — NEVER commit the real xcconfig with the API key
+Configuration/Secrets.xcconfig
+!Configuration/Secrets.xcconfig.example
 
 !default.pbxuser
 *.mode1v3
